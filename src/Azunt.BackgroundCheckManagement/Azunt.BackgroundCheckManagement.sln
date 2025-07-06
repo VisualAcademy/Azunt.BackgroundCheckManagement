@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36221.1 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azunt.BackgroundCheckManagement", "Azunt.BackgroundCheckManagement\Azunt.BackgroundCheckManagement.csproj", "{92E44E48-A13B-46DD-B167-A92DA12E461F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azunt.Web", "Azunt.Web\Azunt.Web\Azunt.Web.csproj", "{9B04615B-8217-4B01-BA0A-CD31FBF15184}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azunt.Web.Client", "Azunt.Web\Azunt.Web.Client\Azunt.Web.Client.csproj", "{0831311C-2978-402C-BFF6-E5D2651BE7D6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{92E44E48-A13B-46DD-B167-A92DA12E461F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92E44E48-A13B-46DD-B167-A92DA12E461F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92E44E48-A13B-46DD-B167-A92DA12E461F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92E44E48-A13B-46DD-B167-A92DA12E461F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B04615B-8217-4B01-BA0A-CD31FBF15184}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B04615B-8217-4B01-BA0A-CD31FBF15184}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B04615B-8217-4B01-BA0A-CD31FBF15184}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B04615B-8217-4B01-BA0A-CD31FBF15184}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0831311C-2978-402C-BFF6-E5D2651BE7D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0831311C-2978-402C-BFF6-E5D2651BE7D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0831311C-2978-402C-BFF6-E5D2651BE7D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0831311C-2978-402C-BFF6-E5D2651BE7D6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0D2F6D05-FFD2-4796-B119-2D23559DDE2E}
+	EndGlobalSection
+EndGlobal
