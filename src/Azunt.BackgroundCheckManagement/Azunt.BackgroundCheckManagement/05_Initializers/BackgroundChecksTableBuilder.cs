@@ -18,17 +18,57 @@ namespace Azunt.BackgroundCheckManagement
             _logger = logger;
         }
 
-        public void Build()
+        public void BuildMasterDatabase()
         {
             try
             {
                 EnsureBackgroundChecksTable(_connectionString);
-                _logger.LogInformation("BackgroundChecks table ensured successfully.");
+                _logger.LogInformation("BackgroundChecks table processed (master DB)");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error ensuring BackgroundChecks table.");
+                _logger.LogError(ex, "Error processing BackgroundChecks table (master DB)");
             }
+        }
+
+        public void BuildTenantDatabases()
+        {
+            var tenantConnectionStrings = GetTenantConnectionStrings();
+
+            foreach (var connStr in tenantConnectionStrings)
+            {
+                try
+                {
+                    EnsureBackgroundChecksTable(connStr);
+                    _logger.LogInformation($"BackgroundChecks table processed (tenant DB): {connStr}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"[{connStr}] Error processing tenant DB");
+                }
+            }
+        }
+
+        private List<string> GetTenantConnectionStrings()
+        {
+            var result = new List<string>();
+
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            var cmd = new SqlCommand("SELECT ConnectionString FROM dbo.Tenants", connection);
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                var connStr = reader["ConnectionString"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(connStr))
+                {
+                    result.Add(connStr);
+                }
+            }
+
+            return result;
         }
 
         private void EnsureBackgroundChecksTable(string connectionString)
@@ -36,7 +76,6 @@ namespace Azunt.BackgroundCheckManagement
             using var connection = new SqlConnection(connectionString);
             connection.Open();
 
-            // Check if table exists
             var checkTableCmd = new SqlCommand(@"
                 SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
                 WHERE TABLE_NAME = 'BackgroundChecks' AND TABLE_SCHEMA = 'dbo'", connection);
@@ -111,19 +150,40 @@ CREATE TABLE [dbo].[BackgroundChecks] (
             }
         }
 
-        public static void Run(IServiceProvider services, string? optionalConnectionString = null)
+        public static void Run(IServiceProvider services, bool forMaster, string? optionalConnectionString = null)
         {
             try
             {
                 var logger = services.GetRequiredService<ILogger<BackgroundChecksTableBuilder>>();
                 var config = services.GetRequiredService<IConfiguration>();
 
-                string connectionString = optionalConnectionString
-                    ?? config.GetConnectionString("DefaultConnection")
-                    ?? throw new InvalidOperationException("Connection string is missing.");
+                string connectionString;
+
+                if (!string.IsNullOrWhiteSpace(optionalConnectionString))
+                {
+                    connectionString = optionalConnectionString;
+                }
+                else
+                {
+                    var tempConnectionString = config.GetConnectionString("DefaultConnection");
+                    if (string.IsNullOrEmpty(tempConnectionString))
+                    {
+                        throw new InvalidOperationException("DefaultConnection is not configured in appsettings.json.");
+                    }
+
+                    connectionString = tempConnectionString;
+                }
 
                 var builder = new BackgroundChecksTableBuilder(connectionString, logger);
-                builder.Build();
+
+                if (forMaster)
+                {
+                    builder.BuildMasterDatabase();
+                }
+                else
+                {
+                    builder.BuildTenantDatabases();
+                }
             }
             catch (Exception ex)
             {
