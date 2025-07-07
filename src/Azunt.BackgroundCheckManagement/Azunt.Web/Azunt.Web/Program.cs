@@ -50,6 +50,8 @@ var defaultConnStr = builder.Configuration.GetConnectionString("DefaultConnectio
 
 builder.Services.AddDependencyInjectionContainerForBackgroundCheckApp(defaultConnStr);
 builder.Services.AddTransient<BackgroundCheckDbContextFactory>();
+builder.Services.AddScoped<IBackgroundCheckStorageService,
+    Azunt.Web.Components.Pages.BackgroundChecks.Services.LocalBackgroundCheckStorageService>();
 
 var app = builder.Build();
 
