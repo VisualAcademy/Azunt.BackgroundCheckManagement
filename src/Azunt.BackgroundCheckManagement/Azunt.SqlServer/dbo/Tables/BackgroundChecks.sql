@@ -11,6 +11,7 @@ CREATE TABLE [dbo].[BackgroundChecks] (
     [FileName]          NVARCHAR(MAX) NULL,
     [InvestigationID]   BIGINT NULL,
     [PackageID]         NVARCHAR(MAX) NULL,
+    [BillCodeID]        NVARCHAR(MAX) NULL, 
     [Provider]          NVARCHAR(MAX) NULL,
     [ReportURL]         NVARCHAR(MAX) NULL,
     [Score]             NVARCHAR(MAX) NULL,
