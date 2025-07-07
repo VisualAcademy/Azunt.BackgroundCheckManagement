@@ -6,14 +6,24 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Azunt.BackgroundCheckManagement; // 네임스페이스 임포트
+using Microsoft.FluentUI.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // [1] Web API 컨트롤러 사용을 위해 추가
 builder.Services.AddControllers();
 
+builder.Services.AddFluentUIComponents();
+
+
 // [2] Razor Pages 및 Blazor Server 지원
 builder.Services.AddRazorPages();
+
+builder.Services.AddServerSideBlazor()
+    .AddCircuitOptions(options =>
+    {
+        options.DetailedErrors = true;
+    });
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

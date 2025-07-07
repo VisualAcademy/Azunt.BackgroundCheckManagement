@@ -1,0 +1,111 @@
+﻿@page "/BackgroundChecks"
+@page "/BackgroundChecks/Manage"
+@page "/BackgroundChecks/Manage/{Category?}"
+
+@namespace Azunt.Web.Pages.BackgroundChecks
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@rendermode InteractiveServer
+
+@using Microsoft.FluentUI.AspNetCore.Components
+
+<h3 class="mt-1 mb-1 d-flex justify-content-between align-items-center">
+    <span class="d-flex align-items-center">
+        BackgroundChecks
+        <span class="oi oi-plus text-primary align-baseline ms-2" @onclick="ShowEditorForm" style="cursor: pointer;">+</span>
+    </span>
+
+    <span class="d-flex align-items-center">
+        <FluentButton IconEnd="@(new Icons.Regular.Size16.Table())"
+                      Appearance="Appearance.Accent"
+                      OnClick="ExportExcel"
+                      Class="align-middle"
+                      Style="height: 32px; padding-top: 4px;">
+            Excel Export
+        </FluentButton>
+    </span>
+</h3>
+
+<div class="row">
+    <div class="col-md-12">
+        @if (models == null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <div class="table-responsive" style="min-height: 400px;">
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th class="text-center" @onclick="@(() => SortBy("BackgroundCheckId"))" style="cursor: pointer;">
+                                BackgroundCheckId <Azunt.Components.Sorting.SortOrderArrow SortColumn="BackgroundCheckId" SortOrder="@sortOrder" />
+                            </th>
+                            <th class="text-center">Provider</th>
+                            <th class="text-center">Score</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">File</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (models.Count == 0)
+                        {
+                            <tr><td colspan="6" class="text-center">No data.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var m in models)
+                            {
+                                <tr>
+                                    <td class="text-nowrap">@m.BackgroundCheckId</td>
+                                    <td class="text-nowrap">@m.Provider</td>
+                                    <td class="text-nowrap">@m.Score</td>
+                                    <td class="text-nowrap">@m.Status</td>
+                                    <td class="text-center">
+                                        @if (!string.IsNullOrWhiteSpace(m.FileName))
+                                        {
+                                            <a href="@($"/api/BackgroundCheckFile/{Uri.EscapeDataString(m.FileName)}")" target="_blank">
+                                                <span class="oi oi-data-transfer-download text-primary"></span>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span>No File</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-primary" @onclick="() => EditBy(m)">Edit</button>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteBy(m)">Del</button>
+                                        <button class="btn btn-sm btn-light" @onclick="() => MoveUp(m.Id)"><span class="oi oi-chevron-top"></span></button>
+                                        <button class="btn btn-sm btn-light" @onclick="() => MoveDown(m.Id)"><span class="oi oi-chevron-bottom"></span></button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="col-md-12">
+        <Azunt.Components.Paging.Pager Model="pager" PageIndexChanged="PageIndexChanged" />
+    </div>
+
+    <div class="col-md-12">
+        <Azunt.Components.Search.SearchBox placeholder="Search..." SearchQueryChanged="Search" />
+    </div>
+</div>
+
+<Azunt.Web.Components.Pages.BackgroundChecks.Components.ModalForm @ref="EditorFormReference"
+                                                                  ModelSender="model"
+                                                                  CreateCallback="CreateOrEdit"
+                                                                  EditCallback="CreateOrEdit"
+                                                                  UserName="@UserName"
+                                                                  ParentId="@ParentId"
+                                                                  ParentKey="@ParentKey">
+    <EditorFormTitle>@EditorFormTitle</EditorFormTitle>
+</Azunt.Web.Components.Pages.BackgroundChecks.Components.ModalForm>
+
+<Azunt.Components.Dialogs.DeleteDialog @ref="DeleteDialogReference" OnClickCallback="DeleteClick" />
