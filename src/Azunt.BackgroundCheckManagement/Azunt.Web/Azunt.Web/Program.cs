@@ -9,6 +9,12 @@ using Azunt.BackgroundCheckManagement; // 네임스페이스 임포트
 
 var builder = WebApplication.CreateBuilder(args);
 
+// [1] Web API 컨트롤러 사용을 위해 추가
+builder.Services.AddControllers();
+
+// [2] Razor Pages 및 Blazor Server 지원
+builder.Services.AddRazorPages();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
@@ -38,6 +44,12 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+var defaultConnStr = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("DefaultConnection is missing in configuration.");
+
+builder.Services.AddDependencyInjectionContainerForBackgroundCheckApp(defaultConnStr);
+builder.Services.AddTransient<BackgroundCheckDbContextFactory>();
 
 var app = builder.Build();
 
@@ -70,5 +82,7 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+app.MapControllers();
 
 app.Run();
