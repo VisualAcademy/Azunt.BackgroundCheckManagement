@@ -4,10 +4,10 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
         <!-- 버전 정보 -->
-        <VersionPrefix>1.0.1</VersionPrefix>
+        <VersionPrefix>1.0.2</VersionPrefix>
         <VersionSuffix></VersionSuffix>
 
         <!-- NuGet 기본 정보 -->
@@ -36,7 +36,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="01_Models\" />
         <Folder Include="02_Contracts\" />
         <Folder Include="03_Repositories\" />
         <Folder Include="04_Extensions\" />
