@@ -1,12 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
-using System.Drawing;
-using Azunt.BackgroundCheckManagement;
 using System.Threading.Tasks;
 using System.Linq;
 using System;
+using System.Globalization;
+
+// Open XML SDK
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
+
+using Azunt.BackgroundCheckManagement;
 
 namespace Azunt.Apis.BackgroundChecks
 {
@@ -31,47 +35,139 @@ namespace Azunt.Apis.BackgroundChecks
         {
             var items = await _backgroundCheckRepository.GetAllAsync();
 
-            if (!items.Any())
+            if (items == null || !items.Any())
                 return NotFound("No background check records found.");
 
-            using var package = new ExcelPackage();
-            var sheet = package.Workbook.Worksheets.Add("BackgroundChecks");
+            byte[] bytes;
 
-            var range = sheet.Cells["B2"].LoadFromCollection(
-                items.Select(m => new
+            using (var ms = new System.IO.MemoryStream())
+            {
+                using (var doc = SpreadsheetDocument.Create(ms, SpreadsheetDocumentType.Workbook, true))
                 {
-                    m.Id,
-                    m.BackgroundCheckId,
-                    m.BackgroundStatus,
-                    m.CompletedAt,
-                    m.CreatedAt,
-                    m.CreatedBy,
-                    m.EmployeeId,
-                    m.Provider,
-                    m.Score,
-                    m.Status,
-                    m.UpdatedAt
-                }),
-                PrintHeaders: true
-            );
+                    var wbPart = doc.AddWorkbookPart();
+                    wbPart.Workbook = new Workbook();
 
-            var header = sheet.Cells["B2:L2"];
-            sheet.DefaultColWidth = 20;
-            range.Style.HorizontalAlignment = ExcelHorizontalAlignment.Left;
-            range.Style.Fill.PatternType = ExcelFillStyle.Solid;
-            range.Style.Fill.BackgroundColor.SetColor(Color.WhiteSmoke);
-            range.Style.Border.BorderAround(ExcelBorderStyle.Medium);
+                    var wsPart = wbPart.AddNewPart<WorksheetPart>();
+                    var sheetData = new SheetData();
+                    wsPart.Worksheet = new Worksheet(sheetData);
 
-            header.Style.Font.Bold = true;
-            header.Style.Font.Color.SetColor(Color.White);
-            header.Style.Fill.BackgroundColor.SetColor(Color.DarkGreen);
+                    var sheets = wbPart.Workbook.AppendChild(new Sheets());
+                    sheets.Append(new Sheet
+                    {
+                        Id = wbPart.GetIdOfPart(wsPart),
+                        SheetId = 1U,
+                        Name = "BackgroundChecks"
+                    });
 
-            sheet.Cells[sheet.Dimension.Address].AutoFitColumns();
+                    //-------------------------------------------------
+                    //  Header
+                    //-------------------------------------------------
+                    uint headerRowIndex = 1;
+                    var headerRow = new Row { RowIndex = headerRowIndex };
+                    sheetData.Append(headerRow);
 
-            var content = package.GetAsByteArray();
-            return File(content,
+                    string[] headers =
+                    {
+                        "Id",
+                        "BackgroundCheckId",
+                        "BackgroundStatus",
+                        "CompletedAt",
+                        "CreatedAt",
+                        "CreatedBy",
+                        "EmployeeId",
+                        "Provider",
+                        "Score",
+                        "Status",
+                        "UpdatedAt"
+                    };
+
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        headerRow.Append(TextCell(Ref(i + 1, (int)headerRowIndex), headers[i]));
+                    }
+
+                    //-------------------------------------------------
+                    //  Rows
+                    //-------------------------------------------------
+                    uint rowIndex = 2;
+
+                    foreach (var m in items)
+                    {
+                        var row = new Row { RowIndex = rowIndex };
+                        sheetData.Append(row);
+
+                        var values = new[]
+                        {
+                            m.Id.ToString(),
+                            m.BackgroundCheckId?.ToString() ?? string.Empty,
+                            m.BackgroundStatus ?? string.Empty,
+                            ConvertDate(m.CompletedAt),
+                            ConvertDate(m.CreatedAt),
+                            m.CreatedBy ?? string.Empty,
+                            m.EmployeeId?.ToString() ?? string.Empty,
+                            m.Provider ?? string.Empty,
+                            m.Score?.ToString() ?? string.Empty,
+                            m.Status ?? string.Empty,
+                            ConvertDate(m.UpdatedAt)
+                        };
+
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            row.Append(TextCell(Ref(i + 1, (int)rowIndex), values[i]));
+                        }
+
+                        rowIndex++;
+                    }
+
+                    wsPart.Worksheet.Save();
+                    wbPart.Workbook.Save();
+                }
+
+                bytes = ms.ToArray();
+            }
+
+            var fileName = $"{DateTime.Now:yyyyMMddHHmmss}_BackgroundChecks.xlsx";
+
+            return File(
+                bytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"{DateTime.Now:yyyyMMddHHmmss}_BackgroundChecks.xlsx");
+                fileName
+            );
+        }
+
+        // ============================================
+        // Helpers
+        // ============================================
+        private static string ConvertDate(DateTimeOffset? dto)
+        {
+            return dto.HasValue
+                ? dto.Value.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+                : string.Empty;
+        }
+
+        private static Cell TextCell(string cellRef, string text) =>
+            new Cell
+            {
+                CellReference = cellRef,
+                DataType = CellValues.String,
+                CellValue = new CellValue(text ?? string.Empty)
+            };
+
+        private static string Ref(int col1Based, int row) => $"{ColName(col1Based)}{row}";
+
+        private static string ColName(int index)
+        {
+            var dividend = index;
+            string col = string.Empty;
+
+            while (dividend > 0)
+            {
+                var modulo = (dividend - 1) % 26;
+                col = (char)('A' + modulo) + col;
+                dividend = (dividend - modulo) / 26;
+            }
+
+            return col;
         }
     }
 }
