@@ -89,7 +89,7 @@ namespace Azunt.BackgroundCheckManagement
 
             // 1) 테이블 존재 확인 (스키마 고정)
             using var checkTableCmd = new SqlCommand(@"
-                SELECT COUNT(*) 
+                SELECT COUNT(*)
                 FROM INFORMATION_SCHEMA.TABLES
                 WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'BackgroundChecks';", connection);
 
@@ -97,28 +97,41 @@ namespace Azunt.BackgroundCheckManagement
 
             if (exists == 0)
             {
-                // 2) 테이블 신규 생성 (모든 가능한 컬럼 포함, NULL 허용, 기본값 가능 시 포함)
+                // 2) 테이블 신규 생성 (주석 포함 / 카테고리 정렬 / CONSTRAINT 키워드 미사용)
                 using var createCmd = new SqlCommand(@"
+-- [0][0] 백그라운드체크: BackgroundChecks
 CREATE TABLE [dbo].[BackgroundChecks] (
-    [ID]                BIGINT IDENTITY(1,1) NOT NULL,
-    [Active]            BIT NULL CONSTRAINT [DF_BackgroundChecks_Active] DEFAULT ((1)),
+    -- 기본 키
+    [ID]                BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY CLUSTERED,
+
+    -- 활성 여부
+    [Active]            BIT NULL DEFAULT (1),
+
+    -- 외부 식별자 / 코드
     [BackgroundCheckID] NVARCHAR(MAX) NULL,
-    [BackgroundStatus]  NVARCHAR(MAX) NULL,
-    [CompletedAt]       DATETIMEOFFSET(7) NULL,
-    [CreatedAt]         DATETIMEOFFSET(7) NULL,
-    [CreatedBy]         NVARCHAR(70) NULL,
-    [EmployeeID]        BIGINT NULL,
-    [FileName]          NVARCHAR(MAX) NULL,
     [InvestigationID]   BIGINT NULL,
     [PackageID]         NVARCHAR(MAX) NULL,
     [BillCodeID]        NVARCHAR(MAX) NULL,
-    [Provider]          NVARCHAR(MAX) NULL,
-    [ReportURL]         NVARCHAR(MAX) NULL,
-    [Score]             NVARCHAR(MAX) NULL,
+
+    -- 상태 / 점수
+    [BackgroundStatus]  NVARCHAR(MAX) NULL,
     [Status]            NVARCHAR(MAX) NULL,
-    [UpdatedAt]         DATETIMEOFFSET(7) NULL,
+    [Score]             NVARCHAR(MAX) NULL,
+
+    -- 파일 / 리포트 정보
+    [FileName]          NVARCHAR(MAX) NULL,
+    [ReportURL]         NVARCHAR(MAX) NULL,
+    [Provider]          NVARCHAR(MAX) NULL,
+
+    -- 관계 키
+    [EmployeeID]        BIGINT NULL,
     [VendorID]          BIGINT NULL,
-    CONSTRAINT [PK_BackgroundChecks] PRIMARY KEY CLUSTERED ([ID] ASC)
+
+    -- 감사(로그) 정보
+    [CreatedAt]         DATETIMEOFFSET(7) NULL,
+    [CreatedBy]         NVARCHAR(70) NULL,
+    [CompletedAt]       DATETIMEOFFSET(7) NULL,
+    [UpdatedAt]         DATETIMEOFFSET(7) NULL
 );", connection);
 
                 createCmd.ExecuteNonQuery();
@@ -132,34 +145,39 @@ CREATE TABLE [dbo].[BackgroundChecks] (
             else
             {
                 // 3) 기존 테이블: 누락 컬럼만 추가 (NULL/DEFAULT 포함)
+                //    ※ 컬럼명 변경 금지 / 타입은 기존과 동일하게 유지(NVARCHAR(MAX) 등)
                 var columns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    { "Active",            "BIT NULL" }, // DEFAULT는 아래에서 별도 확인/보강
+                    { "Active",            "BIT NULL" }, // DEFAULT는 별도 보강
                     { "BackgroundCheckID", "NVARCHAR(MAX) NULL" },
-                    { "BackgroundStatus",  "NVARCHAR(MAX) NULL" },
-                    { "CompletedAt",       "DATETIMEOFFSET(7) NULL" },
-                    { "CreatedAt",         "DATETIMEOFFSET(7) NULL" },
-                    { "CreatedBy",         "NVARCHAR(70) NULL" },
-                    { "EmployeeID",        "BIGINT NULL" },
-                    { "FileName",          "NVARCHAR(MAX) NULL" },
                     { "InvestigationID",   "BIGINT NULL" },
                     { "PackageID",         "NVARCHAR(MAX) NULL" },
                     { "BillCodeID",        "NVARCHAR(MAX) NULL" },
-                    { "Provider",          "NVARCHAR(MAX) NULL" },
-                    { "ReportURL",         "NVARCHAR(MAX) NULL" },
-                    { "Score",             "NVARCHAR(MAX) NULL" },
+
+                    { "BackgroundStatus",  "NVARCHAR(MAX) NULL" },
                     { "Status",            "NVARCHAR(MAX) NULL" },
-                    { "UpdatedAt",         "DATETIMEOFFSET(7) NULL" },
-                    { "VendorID",          "BIGINT NULL" }
+                    { "Score",             "NVARCHAR(MAX) NULL" },
+
+                    { "FileName",          "NVARCHAR(MAX) NULL" },
+                    { "ReportURL",         "NVARCHAR(MAX) NULL" },
+                    { "Provider",          "NVARCHAR(MAX) NULL" },
+
+                    { "EmployeeID",        "BIGINT NULL" },
+                    { "VendorID",          "BIGINT NULL" },
+
+                    { "CreatedAt",         "DATETIMEOFFSET(7) NULL" },
+                    { "CreatedBy",         "NVARCHAR(70) NULL" },
+                    { "CompletedAt",       "DATETIMEOFFSET(7) NULL" },
+                    { "UpdatedAt",         "DATETIMEOFFSET(7) NULL" }
                 };
 
                 foreach (var column in columns)
                 {
                     using var checkColumnCmd = new SqlCommand(@"
-                        SELECT COUNT(*) 
-                        FROM INFORMATION_SCHEMA.COLUMNS 
-                        WHERE TABLE_SCHEMA = 'dbo' 
-                          AND TABLE_NAME = 'BackgroundChecks' 
+                        SELECT COUNT(*)
+                        FROM INFORMATION_SCHEMA.COLUMNS
+                        WHERE TABLE_SCHEMA = 'dbo'
+                          AND TABLE_NAME = 'BackgroundChecks'
                           AND COLUMN_NAME = @ColumnName;", connection);
                     checkColumnCmd.Parameters.AddWithValue("@ColumnName", column.Key);
 
@@ -167,15 +185,19 @@ CREATE TABLE [dbo].[BackgroundChecks] (
                     if (columnExists == 0)
                     {
                         using var alterCmd = new SqlCommand($@"
-                            ALTER TABLE [dbo].[BackgroundChecks]
-                            ADD [{column.Key}] {column.Value};", connection);
+ALTER TABLE [dbo].[BackgroundChecks]
+ADD [{column.Key}] {column.Value};", connection);
+
                         alterCmd.ExecuteNonQuery();
                         _logger.LogInformation("Column [{Col}] added to BackgroundChecks table.", column.Key);
                     }
                 }
 
-                // Active 컬럼의 DEFAULT 제약이 없으면 보강 (이름 고정)
-                EnsureActiveDefaultConstraint(connection);
+                // PK 보강: ID에 PK가 없으면 추가 (CONSTRAINT 키워드 없이)
+                EnsurePrimaryKeyOnId(connection);
+
+                // Active 컬럼의 DEFAULT(1) 없으면 보강 (CONSTRAINT 키워드 없이)
+                EnsureActiveDefault(connection);
 
                 // 인덱스(선택): 존재하지 않을 때만 생성
                 EnsureIndex(connection, "IX_BackgroundChecks_EmployeeID", "EmployeeID");
@@ -185,15 +207,47 @@ CREATE TABLE [dbo].[BackgroundChecks] (
         }
 
         /// <summary>
-        /// Active 컬럼에 DEFAULT ((1)) 제약이 없으면 추가합니다(이름 고정).
-        /// 기존 값은 변경하지 않습니다.
+        /// [ID] 컬럼에 Primary Key가 없으면 추가합니다.
+        /// - CONSTRAINT 키워드 없이 추가합니다.
+        /// - 재실행 안전.
         /// </summary>
-        private void EnsureActiveDefaultConstraint(SqlConnection connection)
+        private void EnsurePrimaryKeyOnId(SqlConnection connection)
         {
             using var cmd = new SqlCommand(@"
 IF EXISTS (
-    SELECT 1 
-    FROM INFORMATION_SCHEMA.COLUMNS 
+    SELECT 1
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'BackgroundChecks' AND COLUMN_NAME = 'ID'
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.key_constraints kc
+        WHERE kc.parent_object_id = OBJECT_ID(N'[dbo].[BackgroundChecks]')
+          AND kc.type = 'PK'
+    )
+    BEGIN
+        ALTER TABLE [dbo].[BackgroundChecks]
+        ADD PRIMARY KEY CLUSTERED ([ID] ASC);
+    END
+END
+", connection);
+
+            cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>
+        /// Active 컬럼에 DEFAULT (1)이 없으면 추가합니다.
+        /// - CONSTRAINT 키워드 없이 "ADD DEFAULT (1) FOR [Active]" 형태로 추가합니다.
+        /// - 기존 값은 변경하지 않습니다.
+        /// - 재실행 안전.
+        /// </summary>
+        private void EnsureActiveDefault(SqlConnection connection)
+        {
+            using var cmd = new SqlCommand(@"
+IF EXISTS (
+    SELECT 1
+    FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'BackgroundChecks' AND COLUMN_NAME = 'Active'
 )
 BEGIN
@@ -207,10 +261,11 @@ BEGIN
     )
     BEGIN
         ALTER TABLE [dbo].[BackgroundChecks]
-        ADD CONSTRAINT [DF_BackgroundChecks_Active] DEFAULT ((1)) FOR [Active];
+        ADD DEFAULT (1) FOR [Active];
     END
 END
 ", connection);
+
             cmd.ExecuteNonQuery();
         }
 
@@ -221,8 +276,8 @@ END
         {
             using var cmd = new SqlCommand(@"
 IF NOT EXISTS (
-    SELECT 1 
-    FROM sys.indexes 
+    SELECT 1
+    FROM sys.indexes
     WHERE name = @IndexName AND object_id = OBJECT_ID(N'[dbo].[BackgroundChecks]')
 )
 BEGIN
@@ -231,6 +286,7 @@ BEGIN
     EXEC sp_executesql @sql;
 END
 ", connection);
+
             cmd.Parameters.AddWithValue("@IndexName", indexName);
             cmd.Parameters.AddWithValue("@ColumnName", columnName);
             cmd.ExecuteNonQuery();
