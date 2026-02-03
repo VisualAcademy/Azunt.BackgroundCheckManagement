@@ -10,34 +10,18 @@ namespace Azunt.BackgroundCheckManagement
     [Table("BackgroundChecks")]
     public class BackgroundCheck
     {
+        // 기본 키
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long Id { get; set; }
 
+        // 활성 여부
         /// <summary>활성 여부 (기본값: true)</summary>
         public bool? Active { get; set; }
 
+        // 외부 식별자 / 코드
         /// <summary>백그라운드체크 고유 Id</summary>
         public string? BackgroundCheckId { get; set; }
-
-        /// <summary>검사 상태</summary>
-        public string? BackgroundStatus { get; set; }
-
-        /// <summary>검사 완료 시각</summary>
-        public DateTimeOffset? CompletedAt { get; set; }
-
-        /// <summary>요청 생성 시각</summary>
-        public DateTimeOffset? CreatedAt { get; set; }
-
-        /// <summary>요청 생성자</summary>
-        [StringLength(70)]
-        public string? CreatedBy { get; set; }
-
-        /// <summary>직원 Id</summary>
-        public long? EmployeeId { get; set; }
-
-        /// <summary>파일 이름</summary>
-        public string? FileName { get; set; }
 
         /// <summary>수사 Id</summary>
         public long? InvestigationId { get; set; }
@@ -48,22 +32,45 @@ namespace Azunt.BackgroundCheckManagement
         /// <summary>청구 코드 Id</summary>
         public string? BillCodeId { get; set; }
 
-        /// <summary>검사 제공자</summary>
-        public string? Provider { get; set; }
-
-        /// <summary>보고서 URL</summary>
-        public string? ReportUrl { get; set; }
-
-        /// <summary>검사 점수</summary>
-        public string? Score { get; set; }
+        // 상태 / 점수
+        /// <summary>검사 상태</summary>
+        public string? BackgroundStatus { get; set; }
 
         /// <summary>검사 요청 상태</summary>
         public string? Status { get; set; }
 
-        /// <summary>최종 업데이트 시각</summary>
-        public DateTimeOffset? UpdatedAt { get; set; }
+        /// <summary>검사 점수</summary>
+        public string? Score { get; set; }
+
+        // 파일 / 리포트 정보
+        /// <summary>파일 이름</summary>
+        public string? FileName { get; set; }
+
+        /// <summary>보고서 URL</summary>
+        public string? ReportUrl { get; set; }
+
+        /// <summary>검사 제공자</summary>
+        public string? Provider { get; set; }
+
+        // 관계 키
+        /// <summary>직원 Id</summary>
+        public long? EmployeeId { get; set; }
 
         /// <summary>벤더 Id</summary>
         public long? VendorId { get; set; }
+
+        // 감사(로그) 정보
+        /// <summary>요청 생성 시각</summary>
+        public DateTimeOffset? CreatedAt { get; set; }
+
+        /// <summary>요청 생성자</summary>
+        [StringLength(70)]
+        public string? CreatedBy { get; set; }
+
+        /// <summary>검사 완료 시각</summary>
+        public DateTimeOffset? CompletedAt { get; set; }
+
+        /// <summary>최종 업데이트 시각</summary>
+        public DateTimeOffset? UpdatedAt { get; set; }
     }
 }
