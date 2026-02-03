@@ -7,7 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!-- Version -->
-    <VersionPrefix>1.0.4</VersionPrefix>
+    <VersionPrefix>1.0.5</VersionPrefix>
     <VersionSuffix></VersionSuffix>
 
     <!-- NuGet metadata -->
@@ -24,7 +24,7 @@
     <RepositoryType>git</RepositoryType>
 
     <!-- Copyright -->
-    <Copyright>© 2025 Hawaso. All rights reserved.</Copyright>
+    <Copyright>© 2026 Hawaso. All rights reserved.</Copyright>
 
     <!-- README & License for NuGet -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
